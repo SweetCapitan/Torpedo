@@ -49,13 +49,15 @@ namespace IngameScript
         {
             Tick++;
 
-            (GridTerminalSystem.GetBlockWithName("TorpedoConnector") as IMyTerminalBlock).ApplyAction("OnOff_On");
+            (GridTerminalSystem.GetBlockWithName("TorpedoConnector") as IMyTerminalBlock).ApplyAction("OnOff_Off");
+            (GridTerminalSystem.GetBlockWithName("FThrust") as IMyThrust).ThrustOverride = 60000;
             (GridTerminalSystem.GetBlockWithName("FThrust") as IMyTerminalBlock).ApplyAction("OnOff_On");
 
             lcd.WriteText("Current: " + Tick.ToString());
 
             if (Tick >= 250)
             {
+                if (Tick >= 320) (GridTerminalSystem.GetBlockWithName("FThrust") as IMyThrust).ThrustOverride = 172800;
                 Vector3D TargetVector = Target - RemCon.GetPosition();
                 Vector3D V3Dup = RemCon.WorldMatrix.Up;
                 Vector3D V3Dfow = RemCon.WorldMatrix.Forward;
