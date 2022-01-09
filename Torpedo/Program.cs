@@ -27,11 +27,12 @@ namespace IngameScript
 
 
         IMyRemoteControl RemCon;
-        IMyTextPanel lcd;
+        IMyTextPanel lcd1, lcd2;
         List<IMyGyro> gr;
+        HomingHead HH;
         int Tick = 0;
-
-        Vector3D Target = new Vector3D(13422,144388,-109465);
+        bool RadarActive;
+        Vector3D TestVector = new Vector3D(13422,144388,-109465);
 
         public Program()
         {
@@ -39,8 +40,13 @@ namespace IngameScript
             gr = new List<IMyGyro>();
             GridTerminalSystem.GetBlocksOfType<IMyGyro>(gr);
             RemCon = GridTerminalSystem.GetBlockWithName("RemCon") as IMyRemoteControl;
-            lcd = GridTerminalSystem.GetBlockWithName("LCD") as IMyTextPanel;
-            Runtime.UpdateFrequency = UpdateFrequency.Update1;
+            lcd1 = GridTerminalSystem.GetBlockWithName("lcd1") as IMyTextPanel;
+            lcd1.ContentType = ContentType.TEXT_AND_IMAGE;
+            lcd1.FontSize = 2f;
+            lcd2 = GridTerminalSystem.GetBlockWithName("lcd2") as IMyTextPanel;
+            lcd1.ContentType = ContentType.TEXT_AND_IMAGE;
+            lcd1.FontSize = 2f;
+            HH = new HomingHead(this);
         }
 
 
@@ -48,54 +54,55 @@ namespace IngameScript
         public void Main(string argument, UpdateType updateSource)
         {
             Tick++;
-
-            (GridTerminalSystem.GetBlockWithName("TorpedoConnector") as IMyTerminalBlock).ApplyAction("OnOff_Off");
-            (GridTerminalSystem.GetBlockWithName("FThrust") as IMyThrust).ThrustOverride = 60000;
-            (GridTerminalSystem.GetBlockWithName("FThrust") as IMyTerminalBlock).ApplyAction("OnOff_On");
-
-            lcd.WriteText("Current: " + Tick.ToString());
-
-            if (Tick >= 250)
+            // разбираем аргументы, с которыми скриптбыл запущен
+            if (argument == "TryLock")
             {
-                if (Tick >= 320) (GridTerminalSystem.GetBlockWithName("FThrust") as IMyThrust).ThrustOverride = 172800;
-                Vector3D TargetVector = Target - RemCon.GetPosition();
-                Vector3D V3Dup = RemCon.WorldMatrix.Up;
-                Vector3D V3Dfow = RemCon.WorldMatrix.Forward;
-                Vector3D V3Dleft = RemCon.WorldMatrix.Left;
+                HH.Lock(true, 15000); if (HH.CurrentTarget.EntityId != 0)
+                    RadarActive = true;
+                else
+                    RadarActive = false;
+            }
+            else
+            {
+                HH.Update();
+            }
+            if (argument == "Stop")
+            {
+                Runtime.UpdateFrequency = UpdateFrequency.None; HH.StopLock();
+                RadarActive = false;
+            }// если в захвате находится какой-то объект, то выполнение скрипта зацикливается
+            if (RadarActive)
+                Runtime.UpdateFrequency = UpdateFrequency.Update1;
+        }
 
-                Vector3D TargetVector_YZ = Vector3D.Reject(TargetVector, V3Dleft);
-                double Alpha = Math.Acos(Vector3D.Dot(Vector3D.Normalize(TargetVector_YZ), V3Dup));
-                double Pitch = Alpha - (Math.PI / 2);
+        public class HomingHead
+        {
+            Program ParentProgram;
+            private static string Prefix = "Camera";
+            private List<IMyTerminalBlock> CamArray;
+            private int CamIndex;
+            public MyDetectedEntityInfo CurrentTarget;
+            public Vector3D MyPos;
+            public Vector3D correctedTargetLocation;
+            public double TargetDistance;
+            public int LastLockTick;
+            public int TicksPassed;
 
-                //double TargetPitch = Math.Acos(Vector3D.Dot(V3Dup, Vector3D.Normalize(Vector3D.Reject(TargetVector, V3Dleft)))) - (Math.PI / 2);
+            public HomingHead (Program MyProg)
+            {
+                ParentProgram = MyProg;
+                CamIndex = 0;
+                CamArray = new List<IMyTerminalBlock>();
+                ParentProgram.GridTerminalSystem.SearchBlocksOfName(Prefix, CamArray);
+                ParentProgram.lcd1.WriteText("", false);
 
-                Vector3D TargetVector_XZ = Vector3D.Reject(TargetVector, V3Dup);
-                double Beta = Math.Acos(Vector3D.Dot(Vector3D.Normalize(TargetVector_XZ), V3Dleft));
-                double Yaw = Beta - (Math.PI / 2);
-
-                Vector3D Grav_XY = Vector3D.Normalize(Vector3D.Reject(-RemCon.GetNaturalGravity(), V3Dfow));
-                double a = Math.Acos(Vector3D.Dot(Grav_XY, V3Dleft));
-                double Roll = a - (Math.PI / 2);
-
-                Vector3 NavAngles = new Vector3D(Yaw, Pitch, Roll);
-
-                lcd.WriteText("Yaw: " + Math.Round(Yaw, 5) +"\nPitch: " + Math.Round(Pitch, 5) + "\nRoll: " + Math.Round(Roll, 5));
-                
-                float Power = 3;
-                foreach (IMyGyro gyro in gr)
+                foreach (IMyCameraBlock cam in CamArray)
                 {
-                    gyro.GyroOverride = true;
+                    cam.EnableRaycast = true;
 
-                    gyro.Yaw = NavAngles.GetDim(0) * Power;
-                    gyro.Pitch = NavAngles.GetDim(1) * Power;
-                    gyro.Roll = NavAngles.GetDim(2) * Power;
                 }
 
-                
-                
             }
-
-
         }
     }
 }
