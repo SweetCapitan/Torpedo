@@ -103,6 +103,11 @@ namespace IngameScript
                 }
 
             }
+
+            public void Lock(bool TryLock = false, double InitialRange = 10000)
+            {
+                int initCamIndex = CamIndex;
+            }
         }
     }
 }
