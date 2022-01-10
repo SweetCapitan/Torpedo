@@ -31,8 +31,10 @@ namespace IngameScript
         IMyTimerBlock Timer;
         List<IMyGyro> gr;
         HomingHead HH;
+        IMyCockpit cockpit;
         int Tick = 0;
         bool RadarActive;
+        static bool DEBUG = false;
         Vector3D TestVector = new Vector3D(13422,144388,-109465);
 
         public Program()
@@ -42,12 +44,20 @@ namespace IngameScript
             Timer = GridTerminalSystem.GetBlockWithName("Timer") as IMyTimerBlock;
             GridTerminalSystem.GetBlocksOfType<IMyGyro>(gr);
             RemCon = GridTerminalSystem.GetBlockWithName("RemCon") as IMyRemoteControl;
-            lcd1 = GridTerminalSystem.GetBlockWithName("lcd1") as IMyTextPanel;
-            lcd1.ContentType = ContentType.TEXT_AND_IMAGE;
-            lcd1.FontSize = 1.2f;
-            lcd2 = GridTerminalSystem.GetBlockWithName("lcd2") as IMyTextPanel;
-            lcd2.ContentType = ContentType.TEXT_AND_IMAGE;
-            lcd2.FontSize = 1.2f;
+            cockpit = GridTerminalSystem.GetBlockWithName("Cockpit") as IMyCockpit;
+            cockpit.GetSurface(1).ContentType = ContentType.TEXT_AND_IMAGE;
+            cockpit.GetSurface(2).ContentType = ContentType.TEXT_AND_IMAGE;
+            cockpit.GetSurface(1).FontSize = 2f;
+            cockpit.GetSurface(2).FontSize = 2f;
+            if (DEBUG)
+            {
+                lcd1 = GridTerminalSystem.GetBlockWithName("lcd1") as IMyTextPanel;
+                lcd1.ContentType = ContentType.TEXT_AND_IMAGE;
+                lcd1.FontSize = 1.2f;
+                lcd2 = GridTerminalSystem.GetBlockWithName("lcd2") as IMyTextPanel;
+                lcd2.ContentType = ContentType.TEXT_AND_IMAGE;
+                lcd2.FontSize = 1.2f;
+            }
             HH = new HomingHead(this);
         }
 
@@ -55,27 +65,43 @@ namespace IngameScript
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Tick++;
-            // разбираем аргументы, с которыми скриптбыл запущен
-            if (argument == "TryLock")
+            if (updateSource == UpdateType.Update1)
             {
-                HH.Lock(true, 15000); 
-                if (HH.CurrentTarget.EntityId != 0)
-                    RadarActive = true;
-                else
-                    RadarActive = false;
+                Tick++;
+                HH.TargetInfoOutput();
+                HH.Update();
             }
             else
             {
-                HH.Update();
+                switch (argument)
+                {
+                    case "TryLock":
+                        HH.Lock(true, 15000);
+                        if (HH.CurrentTarget.EntityId != 0)
+                            RadarActive = true;
+                        else
+                            RadarActive = false;
+                        if (RadarActive)
+                            Runtime.UpdateFrequency = UpdateFrequency.Update1;
+                        break;
+                    case "Stop":
+                        Runtime.UpdateFrequency = UpdateFrequency.None;
+                        HH.StopLock();
+                        RadarActive = false;
+                        HH.Locked = false;
+                        HH.TargetInfoOutput();
+                        break;
+                }
             }
-            if (argument == "Stop")
-            {
-                Runtime.UpdateFrequency = UpdateFrequency.None; HH.StopLock();
-                RadarActive = false;
-            }// если в захвате находится какой-то объект, то выполнение скрипта зацикливается
-            if (RadarActive)
-                Runtime.UpdateFrequency = UpdateFrequency.Update1;
+        }
+
+        public static Vector3D WorldToGrid(Vector3 world_position, Vector3 GridPosition, MatrixD matrix)
+        {
+            Vector3D position = world_position - GridPosition;
+            double num1 = (position.X * matrix.M11 + position.Y * matrix.M12 + position.Z * matrix.M13);
+            double num2 = (position.X * matrix.M21 + position.Y * matrix.M22 + position.Z * matrix.M23);
+            double num3 = (position.X * matrix.M31 + position.Y * matrix.M32 + position.Z * matrix.M33);
+            return new Vector3D(num1, num2, num3);
         }
 
         public class HomingHead
@@ -90,14 +116,16 @@ namespace IngameScript
             public double TargetDistance;
             public int LastLockTick;
             public int TicksPassed;
+            public bool Locked;
+            public Vector3D O;//Координаты точки первого захвата лок
 
             public HomingHead (Program MyProg)
             {
                 ParentProgram = MyProg;
                 CamIndex = 0;
+                Locked = false;
                 CamArray = new List<IMyTerminalBlock>();
                 ParentProgram.GridTerminalSystem.SearchBlocksOfName(Prefix, CamArray);
-                ParentProgram.lcd1.WriteText("", false);
 
                 foreach (IMyCameraBlock cam in CamArray)
                 {
@@ -108,58 +136,66 @@ namespace IngameScript
 
             public void Lock(bool TryLock = false, double InitialRange = 10000)
             {
-                int initCamIndex = CamIndex;
-                MyDetectedEntityInfo lastDetectedInfo = CurrentTarget;
+                int initCamIndex = CamIndex++;
+                if (CamIndex >= CamArray.Count)
+                    CamIndex = 0;
+                MyDetectedEntityInfo lastDetectedInfo;
                 bool CanScan = true;
-                if (CurrentTarget.EntityId == 0) 
+                // найдем первую после использованной в последний раз камеру, которая способна кастануть лучик на заданную дистанцию. 
+                if (CurrentTarget.EntityId == 0)
                     TargetDistance = InitialRange;
 
-                while ((CamArray[CamIndex] as IMyCameraBlock).CanScan(TargetDistance) == false)
+                while ((CamArray[CamIndex] as IMyCameraBlock)?.CanScan(TargetDistance) == false)
                 {
                     CamIndex++;
-                    if (CamIndex >= CamArray.Count) 
+                    if (CamIndex >= CamArray.Count)
                         CamIndex = 0;
-
                     if (CamIndex == initCamIndex)
                     {
                         CanScan = false;
                         break;
                     }
-                     
                 }
-
+                //если такая камера в массиве найдена - кастуем ей луч. 
                 if (CanScan)
                 {
-                    if ((TryLock) && (CurrentTarget.EntityId == 0)) 
-                        lastDetectedInfo = (CamArray[CamIndex] as IMyCameraBlock).Raycast(InitialRange, 0, 0);
-                    else 
-                        lastDetectedInfo = (CamArray[CamIndex] as IMyCameraBlock).Raycast(correctedTargetLocation);
-
-                    if (lastDetectedInfo.EntityId != 0)
+                    //в случае, если мы осуществляем первоначальный захват цели, кастуем луч вперед 
+                    if ((TryLock) && (CurrentTarget.IsEmpty()))
                     {
+                        lastDetectedInfo = (CamArray[CamIndex] as IMyCameraBlock).Raycast(InitialRange, 0, 0);
+                        if ((!lastDetectedInfo.IsEmpty()) && (lastDetectedInfo.Relationship != MyRelationsBetweenPlayerAndBlock.Owner))
+                        {
+                            Locked = true;
+                            Vector3D deep_point = lastDetectedInfo.HitPosition.Value +
+                                Vector3D.Normalize(lastDetectedInfo.HitPosition.Value - CamArray[CamIndex].GetPosition()) * 5;
+                            O = WorldToGrid(lastDetectedInfo.HitPosition.Value, lastDetectedInfo.Position, lastDetectedInfo.Orientation);
+                        }
+                    }
+                    else //иначе - до координат предполагаемого нахождения цели.	 
+                        lastDetectedInfo = (CamArray[CamIndex] as IMyCameraBlock).Raycast(correctedTargetLocation);
+                    //если что-то нашли лучем, то захват обновлен	 
+                    if ((!lastDetectedInfo.IsEmpty()) && (lastDetectedInfo.Relationship != MyRelationsBetweenPlayerAndBlock.Owner))
+                    {
+                        Locked = true;
                         CurrentTarget = lastDetectedInfo;
                         LastLockTick = ParentProgram.Tick;
                         TicksPassed = 0;
                     }
-                    else
+                    else //иначе - захват потерян 
                     {
-                        ParentProgram.lcd1.WriteText("Target Lost" + "\n", false);
-                        CurrentTarget = lastDetectedInfo;
+                        Locked = false;
+                        //CurrentTarget = lastDetectedInfo;
                     }
-                    CamIndex++;
-                    if (CamIndex >= CamArray.Count) 
-                        CamIndex = 0;
                 }
-
             }
-            public void StopLock()
+                public void StopLock()
             {
                 CurrentTarget = (CamArray[0] as IMyCameraBlock).Raycast(0, 0, 0);
             }
 
             public void TargetInfoOutput()
             {
-                if (CurrentTarget.EntityId != 0)
+                if (CurrentTarget.EntityId != 0 && DEBUG)
                 {
                     ParentProgram.lcd2.WriteText("Target Info \n", false);
                     ParentProgram.lcd2.WriteText(CurrentTarget.EntityId + " \n", true);
@@ -172,9 +208,26 @@ namespace IngameScript
                     ParentProgram.lcd2.WriteText("Z: " + Math.Round(CurrentTarget.Position.GetDim(2), 2).ToString() + " \n", true);
                     ParentProgram.lcd2.WriteText("Velocity:" + Math.Round(CurrentTarget.Velocity.Length(), 2).ToString() + " \n", true);
                     ParentProgram.lcd2.WriteText("Distance: " + Math.Round(TargetDistance, 2).ToString() + " \n", true);
+                    ParentProgram.lcd1.WriteText("Cam array info: " + " \n", false);
+                    ParentProgram.lcd1.WriteText("Cam quantity: " + CamArray.Count.ToString() + " \n", false);
+                    ParentProgram.lcd1.WriteText("Cam: " + CamArray[CamIndex].CustomName + " \n", true);
+                    ParentProgram.lcd1.WriteText("Distance: " +  TargetDistance.ToString() + " \n", true);
+                    ParentProgram.lcd1.WriteText("Delay: " + Math.Round(TargetDistance * 0.03 / CamArray.Count, 0).ToString() + " \n", true);
+                    ParentProgram.lcd1.WriteText("Locked: " + Locked.ToString() + " \n", true);
+                
                 }
-                else
+                else if (DEBUG)
                     ParentProgram.lcd2.WriteText("NO TARGET \n", false);
+                    //ParentProgram.lcd1.WriteText("Locked: " + Locked.ToString() + " \n", false);
+                else if (!DEBUG)
+                {
+                    ParentProgram.cockpit.GetSurface(1).WriteText("Name\n" + CurrentTarget.Name + " \n", false);
+                    ParentProgram.cockpit.GetSurface(1).WriteText("Velocity:" + Math.Round(CurrentTarget.Velocity.Length(), 2).ToString() + " \n", true);
+                    ParentProgram.cockpit.GetSurface(1).WriteText("Distance: " + Math.Round(TargetDistance, 2).ToString() + " \n", true);
+                    ParentProgram.cockpit.GetSurface(2).WriteText("Locked: " + Locked.ToString() + " \n", false);
+                    ParentProgram.cockpit.GetSurface(2).WriteText("Camera: " + CamArray[CamIndex].CustomName + " \n", true);
+                }
+
             }
 
             public void Update()
@@ -188,13 +241,7 @@ namespace IngameScript
 
                     if (TicksPassed>TargetDistance*0.03/CamArray.Count)
                     {
-                        ParentProgram.lcd1.WriteText("Cam array info: " + " \n", false);
-                        ParentProgram.lcd1.WriteText("Cam quantity: " + CamArray.Count.ToString() +" \n", false) ;
-                        ParentProgram.lcd1.WriteText("Cam: " + CamArray[CamIndex].CustomName + " \n", true);
-                        ParentProgram.lcd1.WriteText("Distance: " + TargetDistance.ToString() + " \n", true);
-                        ParentProgram.lcd1.WriteText("Delay: " + Math.Round(TargetDistance * 0.03 / CamArray.Count, 0).ToString() + " \n", true);
-
-                        TargetInfoOutput();
+                        Lock();
                     }
                 }
             }

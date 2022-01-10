@@ -5,13 +5,15 @@ VisualStudioVersion = 16.0.32002.261
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Torpedo", "Torpedo\Torpedo.csproj", "{BD02991B-0560-4A29-B515-3FD42D51EE70}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Torpedo v2", "Torpedo v2\Torpedo v2.csproj", "{1D0B393E-31FE-4C62-9D4E-B6313B8AFE7E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{BD02991B-0560-4A29-B515-3FD42D51EE70}.Debug|x64.ActiveCfg = Debug|x64
-		{BD02991B-0560-4A29-B515-3FD42D51EE70}.Debug|x64.Build.0 = Debug|x64
+		{1D0B393E-31FE-4C62-9D4E-B6313B8AFE7E}.Debug|x64.ActiveCfg = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
