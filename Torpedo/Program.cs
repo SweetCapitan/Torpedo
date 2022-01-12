@@ -23,7 +23,7 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
 
-        //-------------------------------
+        //------------------------------
 
 
         IMyRemoteControl RemCon;
