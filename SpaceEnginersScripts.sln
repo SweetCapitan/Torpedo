@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32002.261
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Torpedo", "Torpedo\Torpedo.csproj", "{BD02991B-0560-4A29-B515-3FD42D51EE70}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Torpedo v2", "Torpedo v2\Torpedo v2.csproj", "{1D0B393E-31FE-4C62-9D4E-B6313B8AFE7E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ForTests", "ForTests\ForTests.csproj", "{47681DDE-6A9F-47D0-BEB7-4E8841F70288}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resiver", "Resiver\Resiver.csproj", "{71FC9909-DFB9-438B-A38D-77CCDACAA4C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Torpedo v3", "Torpedo v3\Torpedo v3.csproj", "{9AB9B812-4ACC-4360-B50D-6EABDEA70681}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VelocityCompensator", "VelocityCompensator\VelocityCompensator.csproj", "{386D1C9E-715E-471D-85F5-92C9DE53CDA4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptForBase", "ScriptForBase\ScriptForBase.csproj", "{16A522EB-DEDA-4691-8729-48A427469891}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Miner", "Miner\Miner.csproj", "{C3734C09-A917-4438-BC59-EA21BC922D29}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{0797DDA0-DD48-4D7B-A9EE-B1E7050D2B07}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BD02991B-0560-4A29-B515-3FD42D51EE70}.Debug|x64.ActiveCfg = Debug|x64
+		{1D0B393E-31FE-4C62-9D4E-B6313B8AFE7E}.Debug|x64.ActiveCfg = Debug|x64
+		{47681DDE-6A9F-47D0-BEB7-4E8841F70288}.Debug|x64.ActiveCfg = Debug|x64
+		{47681DDE-6A9F-47D0-BEB7-4E8841F70288}.Debug|x64.Build.0 = Debug|x64
+		{71FC9909-DFB9-438B-A38D-77CCDACAA4C3}.Debug|x64.ActiveCfg = Debug|x64
+		{71FC9909-DFB9-438B-A38D-77CCDACAA4C3}.Debug|x64.Build.0 = Debug|x64
+		{9AB9B812-4ACC-4360-B50D-6EABDEA70681}.Debug|x64.ActiveCfg = Debug|x64
+		{9AB9B812-4ACC-4360-B50D-6EABDEA70681}.Debug|x64.Build.0 = Debug|x64
+		{386D1C9E-715E-471D-85F5-92C9DE53CDA4}.Debug|x64.ActiveCfg = Debug|x64
+		{386D1C9E-715E-471D-85F5-92C9DE53CDA4}.Debug|x64.Build.0 = Debug|x64
+		{16A522EB-DEDA-4691-8729-48A427469891}.Debug|x64.ActiveCfg = Debug|x64
+		{16A522EB-DEDA-4691-8729-48A427469891}.Debug|x64.Build.0 = Debug|x64
+		{C3734C09-A917-4438-BC59-EA21BC922D29}.Debug|x64.ActiveCfg = Debug|x64
+		{C3734C09-A917-4438-BC59-EA21BC922D29}.Debug|x64.Build.0 = Debug|x64
+		{0797DDA0-DD48-4D7B-A9EE-B1E7050D2B07}.Debug|x64.ActiveCfg = Debug|x64
+		{0797DDA0-DD48-4D7B-A9EE-B1E7050D2B07}.Debug|x64.Build.0 = Debug|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {38C14C97-258E-4F04-A55E-F2ED93784DC4}
+	EndGlobalSection
+EndGlobal
